@@ -87,32 +87,79 @@ setInterval(() => {
   }
 }, 60000);
 
+// ── Resolve tool entry point ──────────────────────────────────────────────────
+function resolveToolPaths(toolPath) {
+  // Layout A: server.js at root (newer tools)
+  if (fs.existsSync(path.join(toolPath, 'server.js')))
+    return { serverFile: path.join(toolPath, 'server.js'), pubDir: path.join(toolPath, 'public') };
+  // Layout B: server/index.js (older tools)
+  if (fs.existsSync(path.join(toolPath, 'server', 'index.js')))
+    return { serverFile: path.join(toolPath, 'server', 'index.js'), pubDir: path.join(toolPath, 'server', 'public') };
+  return {};
+}
+
+function extractApp(mod) {
+  if (typeof mod === 'function') return mod;           // module.exports = app
+  if (mod && typeof mod.app === 'function') return mod.app;  // module.exports = { app, ... }
+  return null;
+}
+
+// Auto-generate a simple tool page from README.md when no public/index.html exists
+function autoPage(tool, toolPath) {
+  const readmePath = path.join(toolPath, 'README.md');
+  const readme = fs.existsSync(readmePath) ? fs.readFileSync(readmePath, 'utf8') : '';
+  const desc = readme.split('\n').filter(l => l.trim() && !l.startsWith('#')).slice(0, 3).join(' ');
+  return `<!doctype html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${tool.title}</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;max-width:800px;margin:0 auto;padding:32px 16px}
+h1{font-size:1.4rem;margin-bottom:8px}
+.back{color:#2563eb;text-decoration:none;font-size:.85rem;display:inline-block;margin-bottom:24px}
+.badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:.75rem;font-weight:600;background:#1a3a1a;color:#3fb950;border:1px solid #234823;margin-bottom:16px}
+.desc{color:#8b949e;line-height:1.6;margin-bottom:24px}
+.endpoints h2{font-size:1rem;color:#8b949e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+pre{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;overflow-x:auto;font-size:.82rem;line-height:1.6;color:#e6edf3}
+</style></head><body>
+<a class="back" href="/">← Back to Cyberlab</a>
+<h1>${tool.title}</h1>
+<span class="badge">${tool.lang === 'node' ? 'Node.js' : 'Python'} · Express</span>
+<p class="desc">${desc || 'Interactive security lab tool.'}</p>
+<div class="endpoints"><h2>API Endpoints</h2>
+<pre>GET  /tools/${tool.slug}/health        → { status: 'ok' }
+
+See README on GitHub for full endpoint documentation:
+https://github.com/Quatech01/${tool.repo}</pre></div>
+</body></html>`;
+}
+
 // ── Mount all tools ───────────────────────────────────────────────────────────
 for (const tool of TOOLS) {
-  const toolPath  = path.join(TOOLS_DIR, tool.slug);
-  const pubDir    = path.join(toolPath, 'public');
-  const serverFile = path.join(toolPath, 'server.js');
-  const mainFile  = path.join(toolPath, 'main.py');
-  const toolBase  = `${BASE}/${tool.slug}`;
+  const toolPath = path.join(TOOLS_DIR, tool.slug);
+  const toolBase = `${BASE}/${tool.slug}`;
 
   if (!fs.existsSync(toolPath)) continue;
 
-  // Serve index.html with API paths patched to relative
-  const serveIndex = (req, res, next) => {
-    const htmlPath = path.join(pubDir, 'index.html');
-    if (!fs.existsSync(htmlPath)) return next();
-    let html = fs.readFileSync(htmlPath, 'utf8');
-    html = html.replace(/(['"`])\/api\//g, '$1api/');
-    res.type('html').send(html);
-  };
-  app.get(toolBase,        serveIndex);
-  app.get(`${toolBase}/`,  serveIndex);
+  const { serverFile, pubDir } = resolveToolPaths(toolPath);
+  const mainFile = path.join(toolPath, 'main.py');
 
-  // Static files (css, js, assets)
-  if (fs.existsSync(pubDir)) app.use(toolBase, express.static(pubDir));
+  // Serve index.html (patched) or auto-generated page
+  const serveIndex = (req, res, next) => {
+    const htmlPath = pubDir && path.join(pubDir, 'index.html');
+    if (htmlPath && fs.existsSync(htmlPath)) {
+      let html = fs.readFileSync(htmlPath, 'utf8');
+      html = html.replace(/(['"`])\/api\//g, '$1api/');
+      return res.type('html').send(html);
+    }
+    res.type('html').send(autoPage(tool, toolPath));
+  };
+  app.get(toolBase,       serveIndex);
+  app.get(`${toolBase}/`, serveIndex);
+
+  // Static files
+  if (pubDir && fs.existsSync(pubDir)) app.use(toolBase, express.static(pubDir));
 
   if (tool.lang === 'python' && fs.existsSync(mainFile)) {
-    // Python: lazy-spawn uvicorn, proxy all requests under toolBase
     app.use(toolBase, (req, res, next) => {
       ensurePython(tool.slug, toolPath, (err, port) => {
         if (err) return res.status(503).json({ error: 'Tool is starting, retry in a moment', retry_after: 5 });
@@ -123,14 +170,15 @@ for (const tool of TOOLS) {
         })(req, res, next);
       });
     });
-  } else if (tool.lang === 'node' && fs.existsSync(serverFile)) {
+  } else if (tool.lang === 'node' && serverFile) {
     try {
-      const toolApp = require(serverFile);
-      if (typeof toolApp === 'function') {
+      const mod     = require(serverFile);
+      const toolApp = extractApp(mod);
+      if (toolApp) {
         app.use(toolBase, toolApp);
         console.log(`[labs] mounted: /tools/${tool.slug}`);
       } else {
-        console.warn(`[labs] skipped (no export): ${tool.slug}`);
+        console.warn(`[labs] skipped (no app export): ${tool.slug}`);
       }
     } catch (e) {
       console.error(`[labs] failed to load ${tool.slug}: ${e.message}`);

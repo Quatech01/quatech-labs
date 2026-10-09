@@ -62,21 +62,39 @@ for slug in "${!TOOLS[@]}"; do
 
   cd "$dest"
 
-  # Node.js tool
-  if [ -f "package.json" ] && [ -f "server.js" ]; then
-    echo "  npm install..."
+  # Node.js tool — Layout A: server.js at root
+  if [ -f "server.js" ]; then
+    echo "  npm install (root)..."
     npm install --production 2>&1 | tail -3
-
     echo "  patching server.js..."
     node "$LABS_DIR/scripts/patch-server.js" server.js
-
-    # Patch index.html: convert absolute /api/ paths to relative api/
     if [ -f "public/index.html" ]; then
       echo "  patching public/index.html..."
-      # All common patterns: fetch('/api/, url: '/api/, axios.get('/api/
       sed -i "s|'/api/|'api/|g"  public/index.html
       sed -i 's|"/api/|"api/|g'  public/index.html
       sed -i 's|`/api/|`api/|g'  public/index.html
+    fi
+  fi
+
+  # Node.js tool — Layout B: server/index.js
+  if [ -f "server/index.js" ]; then
+    echo "  npm install (server/)..."
+    cd server && npm install --production 2>&1 | tail -3 && cd ..
+    echo "  patching server/index.js..."
+    # Add app to exports if not already there
+    if ! grep -q "exports.*app" server/index.js; then
+      sed -i "s/module\.exports = { start };/module.exports = { start, app };/" server/index.js
+      # Fallback: if pattern didn't match, append
+      if ! grep -q "exports.*app" server/index.js; then
+        echo "" >> server/index.js
+        echo "if (typeof app !== 'undefined') module.exports.app = app;" >> server/index.js
+      fi
+    fi
+    if [ -f "server/public/index.html" ]; then
+      echo "  patching server/public/index.html..."
+      sed -i "s|'/api/|'api/|g"  server/public/index.html
+      sed -i 's|"/api/|"api/|g'  server/public/index.html
+      sed -i 's|`/api/|`api/|g'  server/public/index.html
     fi
   fi
 
