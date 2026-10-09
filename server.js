@@ -125,24 +125,122 @@ function autoPage(tool, toolPath) {
   return `<!doctype html><html><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${tool.title}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;max-width:800px;margin:0 auto;padding:32px 16px}
-h1{font-size:1.4rem;margin-bottom:8px}
-.back{color:#2563eb;text-decoration:none;font-size:.85rem;display:inline-block;margin-bottom:24px}
-.badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:.75rem;font-weight:600;background:#1a3a1a;color:#3fb950;border:1px solid #234823;margin-bottom:16px}
-.desc{color:#8b949e;line-height:1.6;margin-bottom:24px}
-.endpoints h2{font-size:1rem;color:#8b949e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
-pre{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;overflow-x:auto;font-size:.82rem;line-height:1.6;color:#e6edf3}
+:root{--bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#2563eb;--green:#3fb950}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);max-width:860px;margin:0 auto;padding:32px 16px 60px}
+a.back{color:var(--accent);text-decoration:none;font-size:.82rem;display:inline-flex;align-items:center;gap:4px;margin-bottom:28px;opacity:.8}
+a.back:hover{opacity:1}
+h1{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;margin-bottom:10px}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+.badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.badge-node{background:#1a3a1a;color:var(--green);border:1px solid #234823}
+.badge-python{background:#1a2a3a;color:#60a5fa;border:1px solid #1e3a5f}
+.badge-gh{background:transparent;color:var(--muted);border:1px solid var(--border);text-decoration:none}
+.badge-gh:hover{border-color:var(--accent);color:var(--text)}
+.desc{color:var(--muted);line-height:1.7;margin-bottom:32px;font-size:.92rem}
+/* Explorer */
+.explorer{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:28px}
+.explorer-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.explorer-header h2{font-size:.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px #3fb95055}
+.input-row{display:flex;gap:0;padding:16px 18px;border-bottom:1px solid var(--border)}
+.method{background:var(--surface2);border:1px solid var(--border);border-right:none;border-radius:6px 0 0 6px;padding:9px 14px;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--green);font-weight:600;white-space:nowrap}
+#path-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-right:none;padding:9px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.8rem;outline:none}
+#path-input:focus{border-color:var(--accent)}
+button#send{background:var(--accent);border:none;border-radius:0 6px 6px 0;padding:9px 18px;color:#fff;font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap}
+button#send:hover{background:#1d4ed8}
+.presets{padding:10px 18px;display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+.preset{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-family:'JetBrains Mono',monospace;font-size:.73rem;color:var(--muted);cursor:pointer;transition:all .15s}
+.preset:hover{border-color:var(--accent);color:var(--text)}
+.response-area{padding:18px;min-height:120px}
+.resp-meta{font-size:.75rem;color:var(--muted);margin-bottom:10px;font-family:'JetBrains Mono',monospace;display:flex;gap:16px}
+.status-ok{color:var(--green)} .status-err{color:#f85149}
+pre#response{font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:1.6;color:var(--text);white-space:pre-wrap;word-break:break-all;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;overflow-x:auto;max-height:400px;overflow-y:auto}
+.placeholder{color:var(--muted);font-size:.85rem;text-align:center;padding:20px 0;font-style:italic}
 </style></head><body>
 <a class="back" href="/">← Back to Cyberlab</a>
 <h1>${tool.title}</h1>
-<span class="badge">${tool.lang === 'node' ? 'Node.js' : 'Python'} · Express</span>
+<div class="meta">
+  <span class="badge badge-${tool.lang}">${tool.lang === 'node' ? 'Node.js' : 'Python'}</span>
+  <a class="badge badge-gh" href="https://github.com/Quatech01/${tool.repo}" target="_blank" rel="noopener">View on GitHub ↗</a>
+</div>
 <p class="desc">${desc || 'Interactive security lab tool.'}</p>
-<div class="endpoints"><h2>API Endpoints</h2>
-<pre>GET  /tools/${tool.slug}/health        → { status: 'ok' }
 
-See README on GitHub for full endpoint documentation:
-https://github.com/Quatech01/${tool.repo}</pre></div>
+<div class="explorer">
+  <div class="explorer-header"><span class="dot"></span><h2>API Explorer — try it live</h2></div>
+  <div class="input-row">
+    <span class="method">GET</span>
+    <input id="path-input" type="text" value="/tools/${tool.slug}/health" placeholder="/tools/${tool.slug}/...">
+    <button id="send">Send →</button>
+  </div>
+  <div class="presets" id="presets"></div>
+  <div class="response-area">
+    <div id="resp-meta" class="resp-meta" hidden></div>
+    <pre id="response"><div class="placeholder">Hit Send to see the response</div></pre>
+  </div>
+</div>
+
+<script>
+const BASE = '/tools/${tool.slug}';
+const PRESETS = ['/health'];
+
+// Try to discover more endpoints from the page URL pattern
+const extra = ${JSON.stringify(
+  (() => {
+    const readmePath2 = path.join(toolPath, 'README.md');
+    if (!fs.existsSync(readmePath2)) return [];
+    const lines = fs.readFileSync(readmePath2, 'utf8').split('\\n');
+    const eps = [];
+    for (const l of lines) {
+      const m = l.match(/GET\\s+(\/[\\w\\-\\/{}:]+)/);
+      if (m && !eps.includes(m[1]) && eps.length < 8) eps.push(m[1]);
+    }
+    return eps;
+  })()
+)};
+const presets = [...new Set([...PRESETS, ...extra])];
+
+const presetsEl = document.getElementById('presets');
+presets.forEach(p => {
+  const btn = document.createElement('button');
+  btn.className = 'preset'; btn.textContent = p;
+  btn.onclick = () => { document.getElementById('path-input').value = BASE + p.replace(/^\\/tools\\/[^/]+/, ''); send(); };
+  presetsEl.appendChild(btn);
+});
+
+async function send() {
+  const rawPath = document.getElementById('path-input').value.trim() || BASE + '/health';
+  const url = rawPath.startsWith('/') ? rawPath : '/' + rawPath;
+  const t0 = Date.now();
+  const metaEl = document.getElementById('resp-meta');
+  const respEl = document.getElementById('response');
+  respEl.textContent = 'Loading…';
+  metaEl.hidden = true;
+  try {
+    const res = await fetch(url);
+    const ms = Date.now() - t0;
+    const ct = res.headers.get('content-type') || '';
+    let body;
+    if (ct.includes('json')) {
+      body = JSON.stringify(await res.json(), null, 2);
+    } else {
+      body = await res.text();
+    }
+    metaEl.hidden = false;
+    metaEl.innerHTML = '<span class="' + (res.ok ? 'status-ok' : 'status-err') + '">' + res.status + ' ' + res.statusText + '</span><span>' + ms + 'ms</span><span>' + ct + '</span>';
+    respEl.textContent = body;
+  } catch(e) {
+    metaEl.hidden = false;
+    metaEl.innerHTML = '<span class="status-err">Network error</span>';
+    respEl.textContent = e.message;
+  }
+}
+
+document.getElementById('send').onclick = send;
+document.getElementById('path-input').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+</script>
 </body></html>`;
 }
 
