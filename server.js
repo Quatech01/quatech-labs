@@ -108,7 +108,20 @@ function extractApp(mod) {
 function autoPage(tool, toolPath) {
   const readmePath = path.join(toolPath, 'README.md');
   const readme = fs.existsSync(readmePath) ? fs.readFileSync(readmePath, 'utf8') : '';
-  const desc = readme.split('\n').filter(l => l.trim() && !l.startsWith('#')).slice(0, 3).join(' ');
+  // Pick first non-heading, non-empty paragraph lines, strip markdown syntax
+  const rawDesc = readme.split('\n')
+    .filter(l => l.trim() && !l.startsWith('#') && !l.startsWith('```') && !l.startsWith('|'))
+    .slice(0, 4).join(' ')
+    .replace(/\*\*(.+?)\*\*/g, '$1')   // **bold**
+    .replace(/\*(.+?)\*/g, '$1')        // *italic*
+    .replace(/`(.+?)`/g, '$1')          // `code`
+    .replace(/\[(.+?)\]\(.+?\)/g, '$1') // [link](url)
+    .replace(/#+\s*/g, '')              // stray headings
+    .trim();
+  // Truncate at a sentence boundary, max 300 chars
+  let desc = rawDesc.length > 300 ? rawDesc.slice(0, 300) : rawDesc;
+  const lastPeriod = desc.lastIndexOf('.');
+  if (lastPeriod > 80) desc = desc.slice(0, lastPeriod + 1);
   return `<!doctype html><html><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${tool.title}</title>
