@@ -89,12 +89,18 @@ setInterval(() => {
 
 // ── Resolve tool entry point ──────────────────────────────────────────────────
 function resolveToolPaths(toolPath) {
-  // Layout A: server.js at root (newer tools)
+  // Layout A: server.js at root
   if (fs.existsSync(path.join(toolPath, 'server.js')))
     return { serverFile: path.join(toolPath, 'server.js'), pubDir: path.join(toolPath, 'public') };
   // Layout B: server/index.js (older tools)
   if (fs.existsSync(path.join(toolPath, 'server', 'index.js')))
     return { serverFile: path.join(toolPath, 'server', 'index.js'), pubDir: path.join(toolPath, 'server', 'public') };
+  // Layout C: index.js at root
+  if (fs.existsSync(path.join(toolPath, 'index.js')))
+    return { serverFile: path.join(toolPath, 'index.js'), pubDir: path.join(toolPath, 'public') };
+  // Layout D: backend/index.js (fullstack — serve frontend/ as static)
+  if (fs.existsSync(path.join(toolPath, 'backend', 'index.js')))
+    return { serverFile: path.join(toolPath, 'backend', 'index.js'), pubDir: path.join(toolPath, 'frontend') };
   return {};
 }
 
@@ -252,27 +258,37 @@ for (const tool of TOOLS) {
   if (!fs.existsSync(toolPath)) continue;
 
   const { serverFile, pubDir } = resolveToolPaths(toolPath);
-  const mainFile = path.join(toolPath, 'main.py');
 
-  // Serve index.html (patched) or auto-generated page
-  const serveIndex = (req, res, next) => {
-    const htmlPath = pubDir && path.join(pubDir, 'index.html');
-    if (htmlPath && fs.existsSync(htmlPath)) {
-      let html = fs.readFileSync(htmlPath, 'utf8');
-      html = html.replace(/(['"`])\/api\//g, '$1api/');
-      return res.type('html').send(html);
-    }
-    res.type('html').send(autoPage(tool, toolPath));
-  };
-  app.get(toolBase,       serveIndex);
-  app.get(`${toolBase}/`, serveIndex);
+  // Python main.py can be at root or inside server/
+  const mainFile = fs.existsSync(path.join(toolPath, 'main.py'))
+    ? path.join(toolPath, 'main.py')
+    : fs.existsSync(path.join(toolPath, 'server', 'main.py'))
+    ? path.join(toolPath, 'server', 'main.py')
+    : null;
 
-  // Static files
+  // Some Python tools ship a separate frontend/ directory alongside the API
+  const frontendDir = path.join(toolPath, 'frontend');
+
+  // 1. Response interceptor: patch absolute /api/ → relative in any HTML the tool sends
+  app.use(toolBase, (req, res, next) => {
+    const origSend = res.send.bind(res);
+    res.send = function(body) {
+      if (typeof body === 'string' && (res.getHeader('content-type') || '').includes('html')) {
+        body = body.replace(/(['"`])\/api\//g, '$1api/');
+      }
+      return origSend(body);
+    };
+    next();
+  });
+
+  // 2. Static files — pubDir (Node tools) and frontendDir (Python tools with a UI)
   if (pubDir && fs.existsSync(pubDir)) app.use(toolBase, express.static(pubDir));
+  if (fs.existsSync(frontendDir)) app.use(toolBase, express.static(frontendDir));
 
-  if (tool.lang === 'python' && fs.existsSync(mainFile)) {
+  // 3. Tool app (its own root UI and API routes come first)
+  if (tool.lang === 'python' && mainFile) {
     app.use(toolBase, (req, res, next) => {
-      ensurePython(tool.slug, toolPath, (err, port) => {
+      ensurePython(tool.slug, path.dirname(mainFile), (err, port) => {
         if (err) return res.status(503).json({ error: 'Tool is starting, retry in a moment', retry_after: 5 });
         createProxyMiddleware({
           target: `http://127.0.0.1:${port}`,
@@ -295,6 +311,11 @@ for (const tool of TOOLS) {
       console.error(`[labs] failed to load ${tool.slug}: ${e.message}`);
     }
   }
+
+  // 4. Fallback: only shown when the tool has no public/index.html and no root route
+  app.get([toolBase, `${toolBase}/`], (req, res) => {
+    res.type('html').send(autoPage(tool, toolPath));
+  });
 }
 
 // ── API: tool listing ─────────────────────────────────────────────────────────

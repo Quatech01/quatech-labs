@@ -98,10 +98,49 @@ for slug in "${!TOOLS[@]}"; do
     fi
   fi
 
-  # Python tool
-  if [ -f "main.py" ] || [ -f "requirements.txt" ]; then
-    echo "  pip install..."
-    pip3 install -r requirements.txt -q 2>&1 | tail -3 || true
+  # Node.js tool — Layout C: index.js at root
+  if [ -f "index.js" ] && [ ! -f "server.js" ] && [ ! -f "server/index.js" ]; then
+    echo "  npm install (root, Layout C)..."
+    npm install --production 2>&1 | tail -3
+    # Patch all public/*.html
+    if [ -d "public" ]; then
+      for html in public/*.html; do
+        [ -f "$html" ] || continue
+        sed -i "s|'/api/|'api/|g"  "$html"
+        sed -i 's|"/api/|"api/|g'  "$html"
+        sed -i 's|`/api/|`api/|g'  "$html"
+        sed -i 's|`/api\${|`api${|g' "$html"
+      done
+    fi
+  fi
+
+  # Node.js tool — Layout D: backend/index.js with frontend/
+  if [ -f "backend/index.js" ]; then
+    echo "  npm install (backend/, Layout D)..."
+    cd backend && npm install --production 2>&1 | tail -3 && cd ..
+    # Patch all frontend/*.html
+    if [ -d "frontend" ]; then
+      for html in frontend/*.html; do
+        [ -f "$html" ] || continue
+        sed -i "s|'/api/|'api/|g"  "$html"
+        sed -i 's|"/api/|"api/|g'  "$html"
+        sed -i 's|`/api/|`api/|g'  "$html"
+        sed -i 's|`/api\${|`api${|g' "$html"
+        sed -i "s|fetch('/api|fetch('api|g" "$html"
+      done
+    fi
+  fi
+
+  # Python tool — main.py at root or in server/
+  if [ -f "main.py" ] || [ -f "server/main.py" ] || [ -f "requirements.txt" ] || [ -f "server/requirements.txt" ]; then
+    if [ -f "requirements.txt" ]; then
+      echo "  pip install (root)..."
+      pip3 install -r requirements.txt -q 2>&1 | tail -3 || true
+    fi
+    if [ -f "server/requirements.txt" ]; then
+      echo "  pip install (server/)..."
+      pip3 install -r server/requirements.txt -q 2>&1 | tail -3 || true
+    fi
 
     # Patch HTML similarly
     if [ -f "public/index.html" ]; then
@@ -109,6 +148,15 @@ for slug in "${!TOOLS[@]}"; do
       sed -i "s|'/api/|'api/|g"  public/index.html
       sed -i 's|"/api/|"api/|g'  public/index.html
       sed -i 's|`/api/|`api/|g'  public/index.html
+    fi
+    # Patch frontend/ for Python tools with a UI
+    if [ -d "frontend" ]; then
+      for html in frontend/*.html; do
+        [ -f "$html" ] || continue
+        sed -i "s|'/api/|'api/|g"  "$html"
+        sed -i 's|"/api/|"api/|g'  "$html"
+        sed -i 's|`/api/|`api/|g'  "$html"
+      done
     fi
   fi
 
