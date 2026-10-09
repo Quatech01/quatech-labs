@@ -1,0 +1,277 @@
+<title>Quatech Cyberlab</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --surface2: #1c2128;
+  --border:   #30363d;
+  --text:     #e6edf3;
+  --muted:    #8b949e;
+  --accent:   #2563eb;
+  --accent-g: #1d4ed8;
+  --green:    #3fb950;
+  --yellow:   #d29922;
+  --red:      #f85149;
+  --purple:   #a371f7;
+  --cyan:     #39c5cf;
+  --orange:   #f0883e;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  padding-inline:16px;
+}
+
+/* ── Header ── */
+header {
+  max-width:1200px;
+  margin:0 auto;
+  padding:40px 0 32px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+}
+.brand { display:flex; align-items:center; gap:14px; }
+.brand-icon {
+  width:48px; height:48px;
+  background:linear-gradient(135deg,var(--accent),var(--purple));
+  border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; flex-shrink:0;
+}
+.brand-text h1 { font-size:1.5rem; font-weight:700; letter-spacing:-0.02em; }
+.brand-text p  { font-size:0.85rem; color:var(--muted); margin-top:2px; }
+.stats-row { display:flex; gap:24px; flex-wrap:wrap; }
+.stat { text-align:center; }
+.stat-n { font-family:'JetBrains Mono',monospace; font-size:1.5rem; font-weight:600; color:var(--accent); }
+.stat-l { font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-top:2px; }
+
+/* ── Controls ── */
+.controls {
+  max-width:1200px;
+  margin:28px auto 0;
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.search-wrap { position:relative; flex:1; min-width:200px; }
+.search-wrap svg { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; }
+input[type=search] {
+  width:100%; padding:9px 12px 9px 36px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; color:var(--text); font-size:0.875rem;
+  outline:none;
+}
+input[type=search]:focus { border-color:var(--accent); }
+.pills { display:flex; gap:6px; flex-wrap:wrap; }
+.pill {
+  padding:5px 12px; border-radius:20px; font-size:0.78rem; font-weight:500;
+  background:var(--surface); border:1px solid var(--border);
+  color:var(--muted); cursor:pointer; transition:all .15s; white-space:nowrap;
+}
+.pill:hover  { border-color:var(--accent); color:var(--text); }
+.pill.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* ── Grid ── */
+.grid {
+  max-width:1200px;
+  margin:24px auto 60px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:16px;
+}
+.tool-card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:20px;
+  display:flex; flex-direction:column; gap:12px;
+  transition:border-color .15s,transform .15s;
+  cursor:pointer; text-decoration:none;
+}
+.tool-card:hover {
+  border-color:var(--accent);
+  transform:translateY(-2px);
+}
+.tool-card.unavailable { opacity:.45; pointer-events:none; }
+
+.card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.card-badges { display:flex; gap:6px; flex-wrap:wrap; }
+.badge {
+  font-size:0.68rem; font-weight:600; padding:2px 8px;
+  border-radius:10px; text-transform:uppercase; letter-spacing:.04em;
+}
+.badge-node   { background:#1a3a1a; color:var(--green); border:1px solid #234823; }
+.badge-python { background:#1a2a3a; color:#60a5fa; border:1px solid #1e3a5f; }
+.badge-id     { background:transparent; color:var(--muted); border:1px solid var(--border); font-family:'JetBrains Mono',monospace; }
+.status-dot   { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+.status-dot.available   { background:var(--green); box-shadow:0 0 6px #3fb95066; }
+.status-dot.unavailable { background:var(--border); }
+
+.card-title { font-size:0.97rem; font-weight:600; color:var(--text); line-height:1.3; }
+.card-desc  { font-size:0.8rem; color:var(--muted); line-height:1.55; flex:1;
+              display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+
+.card-cat   {
+  font-size:0.72rem; font-weight:500; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.05em;
+  padding-top:8px; border-top:1px solid var(--border);
+}
+
+/* category colors */
+.cat-web_security              { color:#f97316; }
+.cat-cryptography              { color:var(--purple); }
+.cat-network_security          { color:var(--cyan); }
+.cat-authentication_and_access { color:var(--green); }
+.cat-malware_analysis          { color:var(--red); }
+.cat-secure_coding             { color:var(--yellow); }
+.cat-osint_and_recon           { color:#60a5fa; }
+.cat-uk_applications           { color:#e4b4ff; }
+
+.empty { max-width:1200px; margin:60px auto; text-align:center; color:var(--muted); font-size:0.9rem; }
+</style>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">🔬</div>
+    <div class="brand-text">
+      <h1>Quatech Cyberlab</h1>
+      <p>Interactive security research tools — built for UK practitioners</p>
+    </div>
+  </div>
+  <div class="stats-row">
+    <div class="stat"><div class="stat-n" id="stat-total">27</div><div class="stat-l">Labs</div></div>
+    <div class="stat"><div class="stat-n" id="stat-live">—</div><div class="stat-l">Live</div></div>
+    <div class="stat"><div class="stat-n">8</div><div class="stat-l">Categories</div></div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="search-wrap">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="search" id="search" placeholder="Search tools…" autocomplete="off">
+  </div>
+  <div class="pills" id="pills">
+    <button class="pill active" data-cat="all">All</button>
+    <button class="pill" data-cat="web_security">Web Security</button>
+    <button class="pill" data-cat="cryptography">Cryptography</button>
+    <button class="pill" data-cat="network_security">Network</button>
+    <button class="pill" data-cat="authentication_and_access">Auth &amp; Access</button>
+    <button class="pill" data-cat="malware_analysis">Malware</button>
+    <button class="pill" data-cat="secure_coding">Secure Coding</button>
+    <button class="pill" data-cat="osint_and_recon">OSINT</button>
+    <button class="pill" data-cat="uk_applications">UK Apps</button>
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+<div class="empty" id="empty" hidden>No tools match your search.</div>
+
+<script>
+const CAT_LABELS = {
+  web_security:'Web Security', cryptography:'Cryptography',
+  network_security:'Network Security', authentication_and_access:'Auth & Access',
+  malware_analysis:'Malware Analysis', secure_coding:'Secure Coding',
+  osint_and_recon:'OSINT & Recon', uk_applications:'UK Applications',
+};
+
+const DESCS = {
+  'xss-reflection-scanner':'Crawls endpoints for input parameters, injects XSS payloads and detects which inputs are reflected in responses without sanitization.',
+  'port-scanner-service-fingerprinting':'Scans a range of localhost ports, identifies open services, and fingerprints them by analysing banner responses.',
+  'sql-injection-detector':'Detects error-based, union-based, and boolean-based blind SQL injection against endpoints using raw string concatenation vs parameterized queries.',
+  'hash-collision-demonstrator':'Compares MD5, SHA-1, and SHA-256 by measuring collision resistance and computing a live birthday-attack prefix collision on MD5.',
+  'brute-force-rate-limiter-demo':'Tests login endpoints for brute force protection — measuring attempts before lockout, IP-based vs account-based lockout, Retry-After headers.',
+  'file-entropy-analyzer':'Calculates Shannon entropy of files to detect packed, encrypted, or compressed content. High entropy (>7.5 bits/byte) indicates potential obfuscation.',
+  'csrf-token-validator':'Tests form endpoints for CSRF protection: token presence, single-use rotation, SameSite cookie attributes, and referer validation.',
+  'aes-encryption-mode-comparison':'Compares ECB, CBC, CTR, and GCM encryption modes — demonstrating ECB pattern preservation and why AES-GCM is the only authenticated mode.',
+  'input-sanitization-library':'Comprehensive sanitization for HTML escaping, SQL parameterization, path normalization, and command injection prevention.',
+  'log-file-anomaly-detector':'Parses server access logs to detect SQL injection attempts, directory traversal sequences, known scanner user agents, and request-rate spikes.',
+  'jwt-vulnerability-scanner':'Tests JWT tokens for none-algorithm acceptance, weak HS256 secret cracking via dictionary attack, algorithm confusion, and missing expiry validation.',
+  'http-security-header-auditor':'Audits HTTP response headers for HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy — grading each endpoint from A to F.',
+  'keylogger-detection-and-flagging':'Multi-surface keylogger detection across process names, registry autorun keys, temp-directory capture patterns, and C2 network connection indicators.',
+  'dns-record-analyzer':'Audits email authentication records — detecting missing SPF, permissive +all qualifiers, absent DMARC records, and monitoring-only p=none policies.',
+  'email-header-analyzer':'Parses raw email headers to trace delivery paths, check SPF/DKIM/DMARC alignment, and detect spoofing indicators.',
+  'oauth-pkce-flow-analyzer':'Demonstrates OAuth 2.0 PKCE misconfigurations: missing code_verifier enforcement and unvalidated redirect_uri allowing authorization code interception.',
+  'timing-attack-demonstrator':'Demonstrates timing side-channel attacks by measuring Pearson correlation between prefix-match length and response latency.',
+  'open-redirect-checker':'Tests URL redirect parameters for open redirect vulnerabilities — detecting unvalidated redirects and substring-check bypasses.',
+  'soc-tier1-alert-triage-simulator':'SOC training simulator with ECS-formatted alerts, SSE live streaming, Canvas dashboard, and CLI pre-triage tool for deduplication.',
+  'directory-traversal-detector':'Sends path traversal payloads (../, %2f, %252f) to file-serving endpoints checking if path.join without startsWith exposes outside-directory files.',
+  'session-fixation-demonstrator':'Demonstrates session fixation by proving un-regenerated session IDs after login allow attacker access.',
+  'subdomain-enumerator':'Wordlist-based subdomain enumeration using a mock DNS-over-HTTP resolver. Probes a 60-label wordlist and classifies each by sensitivity.',
+  'gp-appointment-booking-system':'NHS-style GP appointment booking with JWT auth, four-role RBAC, CSRF double-submit pattern, Helmet, rate limiting, IDOR-safe cancellations, and audit log.',
+  'hash-generator-authenticator':'Generates and authenticates hashes across MD5, SHA-1, SHA-256, SHA-512, bcrypt, and HMAC-SHA256 with security ratings and dictionary-crack demo.',
+  'form-platform':'Free online form builder with no-code field editor, public submission endpoints, JWT auth, bcrypt, honeypot spam protection, and CSV export.',
+  'totp-demo':'RFC 6238 TOTP from scratch using Node\'s built-in crypto — enrolment, step-up MFA, replay prevention, and brute-force lockout.',
+  'tls-inspector':'Inspects live TLS connections for expiry, cipher suite strength, protocol version, hostname validation, and chain trust.',
+};
+
+let tools = [], activeFilter = 'all', query = '';
+
+async function loadTools() {
+  try {
+    const data = await fetch('api/tools').then(r => r.json());
+    tools = data;
+    document.getElementById('stat-live').textContent = data.filter(t => t.available).length;
+    render();
+  } catch { render(); }
+}
+
+function render() {
+  const grid   = document.getElementById('grid');
+  const empty  = document.getElementById('empty');
+  const q      = query.toLowerCase();
+  const subset = tools.filter(t =>
+    (activeFilter === 'all' || t.category === activeFilter) &&
+    (!q || t.title.toLowerCase().includes(q) || (CAT_LABELS[t.category]||'').toLowerCase().includes(q))
+  );
+
+  if (!subset.length) { grid.innerHTML=''; empty.hidden=false; return; }
+  empty.hidden = true;
+  grid.innerHTML = subset.map(t => {
+    const avail = t.available !== false;
+    const cat   = CAT_LABELS[t.category] || t.category;
+    const desc  = DESCS[t.slug] || '';
+    return `<a class="tool-card${avail?'':' unavailable'}" href="${avail ? t.url : '#'}">
+      <div class="card-top">
+        <div class="card-badges">
+          <span class="badge badge-id">#${t.id}</span>
+          <span class="badge badge-${t.lang}">${t.lang === 'node' ? 'Node.js' : 'Python'}</span>
+        </div>
+        <span class="status-dot ${avail ? 'available' : 'unavailable'}" title="${avail ? 'Live' : 'Coming soon'}"></span>
+      </div>
+      <div class="card-title">${t.title}</div>
+      <div class="card-desc">${desc}</div>
+      <div class="card-cat cat-${t.category}">${cat}</div>
+    </a>`;
+  }).join('');
+}
+
+// Filter pills
+document.getElementById('pills').addEventListener('click', e => {
+  const pill = e.target.closest('.pill');
+  if (!pill) return;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  pill.classList.add('active');
+  activeFilter = pill.dataset.cat;
+  render();
+});
+
+// Search
+document.getElementById('search').addEventListener('input', e => {
+  query = e.target.value;
+  render();
+});
+
+loadTools();
+</script>
