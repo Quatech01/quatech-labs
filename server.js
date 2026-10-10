@@ -287,6 +287,14 @@ for (const tool of TOOLS) {
 
   // 3. Tool app (its own root UI and API routes come first)
   if (tool.lang === 'python' && mainFile) {
+    // Python tools don't serve a root UI — show auto-page for root unless a static index.html exists
+    const hasFrontendIndex = fs.existsSync(path.join(frontendDir, 'index.html'));
+    const hasPubIndex      = pubDir && fs.existsSync(path.join(pubDir, 'index.html'));
+    if (!hasFrontendIndex && !hasPubIndex) {
+      app.get([toolBase, `${toolBase}/`], (req, res) => {
+        res.type('html').send(autoPage(tool, toolPath));
+      });
+    }
     app.use(toolBase, (req, res, next) => {
       ensurePython(tool.slug, path.dirname(mainFile), (err, port) => {
         if (err) return res.status(503).json({ error: 'Tool is starting, retry in a moment', retry_after: 5 });
