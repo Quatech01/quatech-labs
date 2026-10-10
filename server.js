@@ -384,7 +384,7 @@ pre#response{font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height
 
 <script>
 const BASE = '/tools/${tool.slug}';
-const PRESETS = ${JSON.stringify(presets)};
+const PRESETS = ${JSON.stringify(presets).replace(/<\//g, '<\\/')};
 
 const methodEl  = document.getElementById('method');
 const pathEl    = document.getElementById('path-input');
